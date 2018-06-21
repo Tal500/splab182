@@ -21,10 +21,6 @@ struct {
 	ActionHandler handler;
 } typedef Action;
 
-#define ACTION_COUNT 4
-
-Action actions[ACTION_COUNT];
-
 char *map_start; /* will point to the start of the memory mapped file */
 const Elf64_Ehdr *header; /* this will point to the header structure */
 int num_of_section_headers;
@@ -179,17 +175,18 @@ int handleQuit() {
 	return 0;
 }
 
-int askOptions() {
+ActionHandler askOptions(const Action* actions) {
 	printf("Choose action:\n");
 
-	for (int i = 0; i < ACTION_COUNT; ++i)
+	int i = 0;
+	for (; actions[i].desc != NULL; ++i)
 		printf("%d-%s\n", (i + 1), actions[i].desc);
 
 	int chosen_option;
-	if (scanf("%d", &chosen_option) != 1 || chosen_option < 1 || chosen_option > ACTION_COUNT)
-		return -1;
+	if (scanf("%d", &chosen_option) != 1 || chosen_option < 1 || chosen_option > i)
+		return NULL;
 	else
-		return (chosen_option - 1);
+		return actions[chosen_option - 1].handler;
 }
 
 int main(int argc, char** argv) {
@@ -222,34 +219,19 @@ int main(int argc, char** argv) {
 	header = (Elf64_Ehdr*)map_start;
 	num_of_section_headers = header->e_shnum;
 
-	int count = 0;
-	actions[count].desc = "Examine ELF File";
-	actions[count].handler = handleExamine;
-	++count;
-
-	actions[count].desc = "Print Section Names";
-	actions[count].handler = handleSection;
-	++count;
-
-	actions[count].desc = "Print Symbols";
-	actions[count].handler = handleSymbols;
-	++count;
-
-	actions[count].desc = "Quit";
-	actions[count].handler = handleQuit;
-	++count;
-
-	if (count != ACTION_COUNT)
-	{
-		printf("Error: action count mismatch!\n");
-		abort();
-	}
+	Action actions[] = {
+		{ "Examine ELF File", handleExamine },
+		{ "Print Section Names", handleSection },
+		{ "Print Symbols", handleSymbols },
+		{ "Quit", handleQuit },
+		{ NULL, NULL }
+	};
 
 	while (1) {
-		int option = askOptions();
-		if (option < 0)
+		ActionHandler handler = askOptions(actions);
+		if (!handler)
 			printf("Bad input were given!\n");
-		else if (!actions[option].handler())
+		else if (!handler())
 			break;
 	}
 
