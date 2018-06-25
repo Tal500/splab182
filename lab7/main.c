@@ -36,10 +36,13 @@ void printHex(char* bytes, int unit_size, int len) {
 			printf(" ");
 
 		for (int j = 0; j < unit_size; ++j) {
-			// If someone has a better way to handle negative hex number than [strlen(res) - 2] trick, please share
 			char res[32];
-			sprintf(res, "%02X", bytes[i + j]);
-			printf("%s", res + strlen(res) - 2);
+			const unsigned int current =
+				((1 << 8) - 1/*masking because of potentialy negative sign bit expansion*/) &
+				(unsigned int)bytes[i + j];
+			
+			sprintf(res, "%02X", current);
+			printf("%s", res);
 		}
 	}
 }
