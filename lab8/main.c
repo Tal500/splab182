@@ -133,13 +133,13 @@ int handleSymbols() {
 	}
 	// otherwise
 
-	const Elf64_Shdr *section_header = (Elf64_Shdr *)(map_start + header->e_shoff);
+	const Elf64_Shdr *first_section = (Elf64_Shdr *)(map_start + header->e_shoff);
 	const int shnum = header->e_shnum;
 
 	int is_first = 1;
 
 	for (int i = 0; i < shnum; ++i) {
-		const Elf64_Shdr *current_section = section_header + i;
+		const Elf64_Shdr *current_section = first_section + i;
 
 		const Elf64_Word type = current_section->sh_type;
 		if (type != SHT_DYNSYM && type != SHT_SYMTAB)
@@ -160,10 +160,9 @@ int handleSymbols() {
 
 		for (int j = 0; j < symbol_count; ++j) {
 			const Elf64_Sym *current_symbol = symbol_start + j;
-			const Elf64_Shdr *current_symbol_section = section_header + current_symbol->st_shndx;
-			//printf(" [%3d] %016lx %3d\n", j, current_symbol->st_value, current_symbol->st_shndx);
+			const Elf64_Shdr *current_symbol_section = first_section + current_symbol->st_shndx;
 			const char* section_name = (current_symbol->st_shndx < shnum) ? getSectionName(current_symbol_section) : "No Section";
-			const char* symbol_name = getSectionDataStart(current_section + 1) + current_symbol->st_name;// Can someone tell me how to do this with sh_link instead of +1?
+			const char* symbol_name = getSectionDataStart(first_section + current_section->sh_link) + current_symbol->st_name;
 			printf(" [%3d] %016lx %5d %-20s %s\n", j, current_symbol->st_value, current_symbol->st_shndx, section_name, symbol_name);
 		}
 	}
